@@ -7,6 +7,7 @@ Assignment:ex4
 #include <string.h>
 
 #define MAX_INPUT_SIZE 100 // Parenthesis Validator
+#define STACK_SIZE 100 // Parenthesis Validator
 #define MAX 20 // Maximum board size (Queens Battle)
 #define MAX_GRID_SIZE 30 // Crossword Generator
 #define MAX_SLOTS 100 // Crossword Generator
@@ -26,9 +27,10 @@ Slot;
 void task1RobotPaths();
 int calculatePaths(int column, int row);
 void task2HumanPyramid();
+float roundToTwoDecimalPlaces(float value);
 float calculateWeight(int row, int column, float weights[]);
 void task3ParenthesisValidator();
-int validateParentheses(char input[], int index, int countRound, int countSquare, int countCurly, int countAngle);
+int validateParentheses(char input[]);
 void task4QueensBattle();
 int isValidPosition(int row, int col, char area, char board[MAX][MAX], int rows[MAX], int cols[MAX], int areas[MAX], int boardSize);
 int solveQueens(int row, int col, int queens, char board[MAX][MAX], int rows[MAX], int cols[MAX], int areas[MAX], int boardSize);
@@ -140,6 +142,10 @@ void task2HumanPyramid() {
        printf("\n");
        }
     }
+// Function to prevent the propagation of small floating-point errors
+float roundToTwoDecimalPlaces(float value) {
+    return (int)(value * 100 + 0.5) / 100.0;
+}
 // Recursive function to calculate the weight supported by a cheerleader
 float calculateWeight(int row, int column, float weights[]) {
     // Calculate the index of cheerleader in the array
@@ -147,76 +153,69 @@ float calculateWeight(int row, int column, float weights[]) {
 
     // Base case: if at the top of the pyramid, return their own weight
     if (row == 0) {
-        return weights[index];
+        return roundToTwoDecimalPlaces(weights[index]);
     }
 
     // Recursive case: calculate the weight supported from above
     float leftWeight = (column > 0) ? calculateWeight(row - 1, column - 1, weights) / 2 : 0;
     float rightWeight = (column < row) ? calculateWeight(row - 1, column, weights) / 2 : 0;
-    return weights[index] + leftWeight + rightWeight;
+    return roundToTwoDecimalPlaces(weights[index] + leftWeight + rightWeight);
 }
 
 // Function for Task 3: Parenthesis Validation
-
 void task3ParenthesisValidator() {
     char input[MAX_INPUT_SIZE];
     printf("Please enter a term for validation:\n");
 
-    // Reading input string using allowed scanf approach
+    // Read input string using scanf
     scanf("%99s", input);
 
-    // Validate parentheses using the recursive function
-    if (validateParentheses(input, 0, 0, 0, 0, 0)) {
+    // Validate parentheses using the function
+    if (validateParentheses(input)) {
         printf("The parentheses are balanced correctly.\n");
     } else {
         printf("The parentheses are not balanced correctly.\n");
     }
 }
 
-// Recursive function to validate parentheses
-int validateParentheses(char input[], int index, int countRound, int countSquare, int countCurly, int countAngle) {
-    // Base case: end of the string (null character)
-    if (input[index] == '\0') {
-        return countRound == 0 && countSquare == 0 && countCurly == 0 && countAngle == 0;
+/**
+ * Validates parentheses using a stack-based approach.
+ * Ensures proper nesting and matching of parentheses.
+ * Returns 1 if balanced, 0 otherwise.
+ */
+int validateParentheses(char input[]) {
+    char stack[STACK_SIZE];
+    int top = -1;
+
+    for (int i = 0; input[i] != '\0'; i++) {
+        char ch = input[i];
+
+        // Push opening brackets to the stack
+        if (ch == '(' || ch == '[' || ch == '{' || ch == '<') {
+            if (top < STACK_SIZE - 1) {
+                stack[++top] = ch;
+            } else {
+                return 0;  // Stack overflow
+            }
+        }
+        // Check for matching closing brackets
+        else if (ch == ')' || ch == ']' || ch == '}' || ch == '>') {
+            if (top == -1) {
+                return 0;  // Unmatched closing bracket
+            }
+            char open = stack[top--];
+            if ((ch == ')' && open != '(') ||
+                (ch == ']' && open != '[') ||
+                (ch == '}' && open != '{') ||
+                (ch == '>' && open != '<')) {
+                return 0;  // Mismatched pair
+                }
+        }
+        // Ignore other characters
     }
 
-    // Update counts based on the character
-    switch (input[index]) {
-        case '(':
-            countRound++;
-        break;
-        case ')':
-            countRound--;
-        break;
-        case '[':
-            countSquare++;
-        break;
-        case ']':
-            countSquare--;
-        break;
-        case '{':
-            countCurly++;
-        break;
-        case '}':
-            countCurly--;
-        break;
-        case '<':
-            countAngle++;
-        break;
-        case '>':
-            countAngle--;
-        break;
-        default:
-            break; // Ignore non-parenthesis characters
-    }
-
-    // Check for imbalance (negative counts)
-    if (countRound < 0 || countSquare < 0 || countCurly < 0 || countAngle < 0) {
-        return 0; // Not balanced
-    }
-
-    // Recursive call to process the next character
-    return validateParentheses(input, index + 1, countRound, countSquare, countCurly, countAngle);
+    // If the stack is empty, all parentheses are balanced
+    return top == -1;
 }
 /**
  * Solves the Queens Battle problem by prompting the user for input
